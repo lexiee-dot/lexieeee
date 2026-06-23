@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生日快乐^^</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --gold: #a89878;
+  --gold-light: #c8b898;
+  --gold-dim: #6a6050;
+  --cream: #d8d0c0;
+  --card-w: 90px;
+  --card-h: 148px;
+  --font-cn: 'Noto Serif SC', serif;
+  --font-parchment: 'MedievalSharp', 'Noto Serif SC', serif;
+}
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #0a0a0a;
+  font-family: var(--font-cn);
+  color: var(--cream);
+}
+
+#bg-layer {
+  position: fixed; inset: -30px;
+  background-image: url('assets/background.jpg');
+  background-size: cover;
+  background-position: center;
+  filter: blur(8px) brightness(0.4) saturate(0.4);
+  z-index: 0;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(40,35,30,0.3) 0%, transparent 60%),
+              radial-gradient(ellipse at 50% 100%, rgba(10,10,10,0.95) 0%, transparent 50%);
+  pointer-events: none; z-index: 1;
+}
+
+#page-overlay {
+  position: fixed; inset: 0;
+  background: #000;
+  z-index: 9999;
+  animation: fadeIn 2s ease-out 0.3s forwards;
+  pointer-events: none;
+}
+@keyframes fadeIn { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+#particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+
+/* Scene */
+#scene {
+  position: relative;
+  width: 100%; height: 100vh;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Verification */
+#verify-box {
+  position: fixed;
+  inset: 0;              /* 关键：占满整个屏幕 */
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 20px;
+
+  opacity: 0;
+  animation: btnFadeIn 1.5s ease-out 2s forwards;
+
+  z-index: 9999;         /* 防止被卡牌盖住 */
+}
+
+#verify-box.hidden { display: none; }
+@keyframes btnFadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+#verify-label {
+  font-size: 0.85rem;
+  color: var(--gold-dim);
+  letter-spacing: 0.2em;
+  order: 2;
+}
+#verify-input {
+  width: 200px;
+  padding: 10px 15px;
+  background: rgba(20,18,15,0.9);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-cn);
+  font-size: 0.9rem;
+  text-align: center;
+  outline: none;
+  order: 3;
+}
+#verify-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(168,152,120,0.2);
+}
+#verify-input::placeholder {
+  color: var(--gold-dim);
+  opacity: 0.5;
+}
+#verify-error {
+  font-size: 0.75rem;
+  color: #aa6a6a;
+  opacity: 0;
+  transition: opacity 0.3s;
+  order: 4;
+}
+#verify-error.show { opacity: 1; }
+
+/* Start button */
+#start-btn {
+  padding: 18px 40px;
+  background: rgba(20,18,15,0.9);
+  border: 2px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--font-cn);
+  font-size: 1rem;
+  letter-spacing: 0.3em;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  /* 页面居中 */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10; /* 提高层级，防止被其他元素盖住 */
+}
+
+#start-btn:hover {
+  background: rgba(30,28,25,0.95);
+  border-color: var(--gold);
+  box-shadow: 0 0 30px rgba(168,152,120,0.3);
+}
+
+/* 关键修复：伪元素禁止拦截点击 */
+#start-btn::before, #start-btn::after {
+  content: '♡';
+  position: absolute;
+  top: 50%; 
+  transform: translateY(-50%);
+  color: var(--gold-dim);
+  font-size: 0.8rem;
+  pointer-events: none; /* 让鼠标穿透伪元素，点到按钮本体 */
+}
+#start-btn::before { left: 12px; }
+#start-btn::after { right: 12px; }
+
+#start-btn.hidden { display: none; }
+
+
+/* Card spread */
+#card-spread {
+  position: relative; width: 100%; flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  perspective: 1200px;
+  opacity: 0;
+  transition: opacity 0.8s;
+}
+#card-spread.visible { opacity: 1; }
+#arc-container { position: relative; width: 95vw; max-width: 1200px; height: 400px; }
+
+.arc-card {
+  position: absolute;
+  width: var(--card-w); height: var(--card-h);
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.4s ease, opacity 0.4s ease;
+  transform-origin: bottom center;
+  opacity: 0;
+  filter: brightness(0.7);
+}
+.arc-card:hover {
+  transform: var(--base-transform) translateY(-25px) scale(1.08) !important;
+  filter: brightness(1.1);
+  z-index: 100 !important;
+}
+.arc-card.dealt { opacity: 1; }
+.arc-card.dimmed { opacity: 0.15; pointer-events: none; filter: brightness(0.3) blur(2px); }
+.arc-card .card-body {
+  width: 100%; height: 100%;
+  border-radius: 6px; overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+.arc-card .card-body img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+
+/* Flying card */
+#flying-card {
+  position: fixed;
+  width: var(--card-w); height: var(--card-h);
+  z-index: 500;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#flying-card.active { opacity: 1; }
+#flying-card .card-inner {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+#flying-card.flipping .card-inner {
+  animation: flipCard 1s ease-in-out forwards;
+}
+@keyframes flipCard {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(180deg); }
+}
+.flying-front, .flying-back {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  border-radius: 6px; overflow: hidden;
+  box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+}
+.flying-front {
+  transform: rotateY(180deg);
+  background: #0a0a0a;
+}
+.flying-front img { width: 100%; height: 100%; object-fit: cover; }
+.flying-back {
+  background: #0a0a0a;
+}
+.flying-back img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Writing area - card left, diary right */
+#writing-area {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 1000px;
+  height: 80vh;
+  display: flex;
+  gap: 40px;
+  align-items: stretch;
+  z-index: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s;
+}
+#writing-area.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Card display - left side */
+#card-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+#display-card {
+  width: 280px;
+  height: 456px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+  position: relative;
+}
+#display-card img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+#display-card.reversed img {
+  transform: rotate(180deg);
+}
+#card-info-below {
+  text-align: center;
+  color: var(--gold);
+}
+#card-info-below .card-name {
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+}
+#card-info-below .card-position {
+  font-size: 0.8rem;
+  color: var(--gold-dim);
+}
+
+/* Diary - right side */
+#diary-container {
+  flex: 1;
+  position: relative;
+  perspective: 1200px;
+}
+#diary-book {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+.diary-page {
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/parchment.png');
+  background-size: cover;
+  background-position: center;
+  border-radius: 4px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  transform-origin: left center;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  backface-visibility: hidden;
+}
+.diary-page.flipping {
+  transform: rotateY(-180deg);
+}
+.diary-page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.diary-date {
+  font-family: var(--font-parchment);
+  font-size: 0.9rem;
+  color: #6a5a45;
+  margin-bottom: 10px;
+}
+.diary-card-name {
+  font-family: var(--font-parchment);
+  font-size: 1.1rem;
+  color: #4a3a25;
+  margin-bottom: 15px;
+}
+.diary-text-display {
+  flex: 1;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: #3a2a18;
+  white-space: pre-wrap;
+}
+.diary-nav {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 15px;
+}
+.diary-nav-btn {
+  padding: 6px 16px;
+  background: rgba(90,74,53,0.2);
+  border: 1px solid rgba(90,74,53,0.4);
+  color: #5a4a35;
+  font-family: var(--font-cn);
+  font-size: 0.75rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+.diary-nav-btn:hover {
+  background: rgba(90,74,53,0.3);
+}
+.diary-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Write page */
+.diary-write-page {
+  z-index: 10;
+}
+.diary-write-page .diary-text-input {
+  width: 80%;
+  height: 180px;
+  margin: 10px auto;
+  border: none;
+  background: transparent;
+  font-family: var(--font-cn);
+  font-size: 1.1rem;
+  line-height: 2;
+  color: #3a2a18;
+  resize: none;
+  outline: none;
+}
+.diary-write-page .diary-text-input::placeholder { color: #a09080; }
+.diary-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px auto;
+  width: 80%;
+}
+.diary-img-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(90,74,53,0.3);
+}
+.diary-img-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.diary-img-item .remove-img {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.diary-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+.diary-btn {
+  padding: 8px 20px;
+  background: rgba(90,74,53,0.2);
+  border: 1px solid rgba(90,74,53,0.4);
+  color: #5a4a35;
+  font-family: var(--font-cn);
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+.diary-btn:hover {
+  background: rgba(90,74,53,0.3);
+}
+.upload-btn {
+  display: inline-block;
+  padding: 8px 20px;
+  background: rgba(90,74,53,0.2);
+  border: 1px solid rgba(90,74,53,0.4);
+  color: #5a4a35;
+  font-family: var(--font-cn);
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+.upload-btn:hover {
+  background: rgba(90,74,53,0.3);
+}
+
+/* Quill */
+#quill {
+  position: fixed;
+  width: 60px;
+  height: auto;
+  z-index: 601;
+  pointer-events: none;
+  opacity: 0;
+  /* 初始移出视口，解决刷新左下角 */
+  left: -9999px;
+  top: -9999px;
+  transition: opacity 0.5s, left 0.05s, top 0.05s;
+  /* 只保留旋转，彻底删掉 translateX(-50px) translateY(-10px) */
+  transform: rotate(-30deg);
+}
+#quill.visible {
+  opacity: 0.9;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 900px) {
+  :root { --card-w: 70px; --card-h: 115px; }
+  #writing-area { flex-direction: column; height: 90vh; }
+  #display-card { width: 200px; height: 326px; }
+  #quill { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="bg-layer"></div>
+<div id="page-overlay"></div>
+<canvas id="particles"></canvas>
+
+<div id="scene">
+  <div id="verify-box">
+    <div id="verify-label">请验证身份</div>
+    <input type="text" id="verify-input" placeholder="输入密码..." lang="zh-CN">
+    <div id="verify-error">密码错误</div>
+  </div>
+  <button id="start-btn"class="hidden">请选择今日启示</button>
+  <div id="card-spread">
+    <div id="arc-container"></div>
+  </div>
+</div>
+
+<div id="flying-card">
+  <div class="card-inner">
+    <div class="flying-front"><img id="flying-front-img" src="" alt=""></div>
+    <div class="flying-back"><img src="assets/cards/back.png" alt=""></div>
+  </div>
+</div>
+
+<div id="writing-area">
+  <div id="card-display">
+    <div id="display-card">
+      <img id="display-card-img" src="" alt="">
+    </div>
+    <div id="card-info-below">
+      <div class="card-name" id="display-card-name"></div>
+      <div class="card-position" id="display-card-position"></div>
+    </div>
+  </div>
+  <div id="diary-container">
+    <div id="diary-book">
+      <!-- History pages will be inserted here -->
+      <div class="diary-page diary-write-page" id="write-page">
+        <div class="diary-page-content">
+          <div class="diary-date" id="write-date"></div>
+          <div class="diary-card-name" id="write-card-name"></div>
+          <textarea class="diary-text-input" id="diary-text-input" placeholder="写下你的感悟..."></textarea>
+          <div class="diary-images" id="diary-images"></div>
+          <div class="diary-actions">
+            <label class="upload-btn">
+              上传图片
+              <input type="file" id="diary-img-input" accept="image/*" multiple style="display:none;">
+            </label>
+            <button class="diary-btn" id="save-btn">保存</button>
+            <button class="diary-btn" id="close-btn">关闭</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<img id="quill" src="assets/quill.png" alt="">
+
+<script>
+// Card data
+const CARDS = [
+  {id:'m0',name:'愚者',en:'The Fool',keyword:'新开始 · 冒险 · 自由',meaning:'今天适合放下顾虑，带着赤子之心迈出第一步。未知并不可怕，它意味着无限可能。',reverseMeaning:'盲目冲动、逃避现实、缺乏规划，不要贸然做重大决定，先看清风险再行动。'},
+  {id:'m1',name:'魔术师',en:'The Magician',keyword:'创造力 · 技巧 · 自信',meaning:'你拥有所需的一切资源。今天是将想法付诸行动的好时机，专注于目标，展现你的才华。',reverseMeaning:'才华闲置、自我怀疑、投机取巧，资源摆在眼前却不会利用，谨防小聪明误事。'},
+  {id:'m2',name:'女祭司',en:'The High Priestess',keyword:'直觉 · 潜意识 · 智慧',meaning:'静下心来倾听内心的声音。答案不在外界，而在你深处。今天适合冥想、反思和等待。',reverseMeaning:'忽略直觉、情绪内耗、信息闭塞，不要固执己见，多接纳他人建议。'},
+  {id:'m3',name:'女皇',en:'The Empress',keyword:'丰盛 · 滋养 · 美',meaning:'今天适合关注生活中的美好事物。关爱自己和身边的人，让温暖与丰盛自然流淌。',reverseMeaning:'疏于照顾自己、情绪泛滥、创造力枯竭，过度沉溺享乐而忽略责任。'},
+  {id:'m4',name:'皇帝',en:'The Emperor',keyword:'权威 · 结构 · 稳定',meaning:'今天需要理性和秩序。建立规则、掌控局面，用坚定的意志推动事情向前发展。',reverseMeaning:'独断专行、固执僵化、缺乏统筹，强硬管控反而会让身边人产生抵触。'},
+  {id:'m5',name:'教皇',en:'The Hierophant',keyword:'传统 · 信仰 · 指引',meaning:'今天适合向有经验的人请教，或回归传统与信仰。在规则中寻找安全感。',reverseMeaning:'墨守成规、盲从他人、思想束缚，不必照搬固有规则，遵从自己内心判断。'},
+  {id:'m6',name:'恋人',en:'The Lovers',keyword:'爱情 · 选择 · 和谐',meaning:'今天面临一个重要的选择，请跟随内心真正的渴望。在关系中追求真诚与共鸣。',reverseMeaning:'选择犹豫、沟通隔阂、关系失衡，感情或合作中容易出现猜忌与分歧。'},
+  {id:'m7',name:'战车',en:'The Chariot',keyword:'胜利 · 意志 · 前进',meaning:'坚定方向，全力以赴。今天适合克服障碍、争取胜利。用意志力掌控前进的方向。',reverseMeaning:'急躁冒进、目标混乱、内耗拉扯，急于求成反而会让进度停滞不前。'},
+  {id:'m8',name:'力量',en:'Strength',keyword:'勇气 · 耐心 · 内在力量',meaning:'真正的力量来自内心的平静。今天用温柔和耐心面对挑战，你会发现自己比想象中更强大。',reverseMeaning:'胆怯懦弱、情绪失控、硬碰硬对抗，靠强硬施压无法解决矛盾。'},
+  {id:'m9',name:'隐士',en:'The Hermit',keyword:'内省 · 独处 · 探索',meaning:'今天适合独处和反思。远离喧嚣，在安静中寻找内心的答案。独处是最好的老师。',reverseMeaning:'自我封闭、孤僻逃避、钻牛角尖，过度独处会陷入负面思绪无法自拔。'},
+  {id:'m10',name:'命运之轮',en:'Wheel of Fortune',keyword:'转变 · 机遇 · 命运',meaning:'命运正在转动，变化即将来临。保持开放的心态，好运正在向你靠近。',reverseMeaning:'运势阻滞、错失转机、抗拒变化，当下低谷不必焦虑，调整心态等待时机。'},
+  {id:'m11',name:'正义',en:'Justice',keyword:'公正 · 真相 · 平衡',meaning:'今天需要客观公正地看待事物。做出符合道德和理性的决定，因果循环，种善因得善果。',reverseMeaning:'逃避责任、偏见失衡、纠结内耗，不愿直面问题只会拖延矛盾爆发。'},
+  {id:'m12',name:'倒吊人',en:'The Hanged Man',keyword:'牺牲 · 等待 · 新视角',meaning:'换个角度看问题，暂停不是停滞。今天的等待是为了明天更好的出发。接受当下，换个视角。',reverseMeaning:'无谓牺牲、固执等待、自我消耗，一味退让换不来想要的结果。'},
+  {id:'m13',name:'死神',en:'Death',keyword:'结束 · 转化 · 重生',meaning:'旧的必须结束，新的才能开始。今天适合放下不再属于你的东西，迎接蜕变与新生。',reverseMeaning:'抗拒改变、沉溺过往、停滞不前，紧抓早已过时的人事物阻碍新生。'},
+  {id:'m14',name:'节制',en:'Temperance',keyword:'平衡 · 调和 · 耐心',meaning:'今天适合寻找中庸之道。不要走极端，在各方面寻求平衡与和谐。耐心会带来好结果。',reverseMeaning:'失衡失控、急功近利、不懂调和，做事缺乏耐心，难以把握分寸感。'},
+  {id:'m15',name:'恶魔',en:'The Devil',keyword:'束缚 · 欲望 · 阴影',meaning:'审视是什么在束缚你——是习惯、欲望还是恐惧？今天适合正视阴影，打破枷锁。',reverseMeaning:'挣脱束缚、清醒止损、拒绝执念，看清欲望枷锁，主动摆脱消耗你的关系。'},
+  {id:'m16',name:'塔',en:'The Tower',keyword:'突变 · 觉醒 · 颠覆',meaning:'突如其来的变化可能让人不安，但这是必要的颠覆。旧的结构倒塌，才能建立更真实的根基。',reverseMeaning:'刻意回避隐患、心存侥幸，隐瞒的问题终将爆发，早做止损减少损失。'},
+  {id:'m17',name:'星星',en:'The Star',keyword:'希望 · 灵感 · 宁静',meaning:'黑暗之后是星光。今天充满希望与治愈的能量，相信未来，让心灵在宁静中恢复。',reverseMeaning:'失去希望、自我否定、空想不行动，只幻想美好却不愿付出实际努力。'},
+  {id:'m18',name:'月亮',en:'The Moon',keyword:'幻象 · 不安 · 潜意识',meaning:'事情可能不如表面看起来那样。今天要注意隐藏的恐惧和幻觉，信任直觉穿越迷雾。',reverseMeaning:'内心焦虑、猜忌多疑、被假象迷惑，别被恐惧脑补的负面画面困住。'},
+  {id:'m19',name:'太阳',en:'The Sun',keyword:'快乐 · 成功 · 活力',meaning:'阳光普照的好日子！今天充满正能量，适合表达自我、享受生活的乐趣。一切都会好起来。',reverseMeaning:'低落消沉、自我封闭、骄傲自负，过度在意他人眼光失去内心平和。'},
+  {id:'m20',name:'审判',en:'Judgement',keyword:'觉醒 · 召唤 · 重生',meaning:'一个重要的觉醒时刻。回顾过去，做出评价，然后以全新的姿态迎接人生的新篇章。',reverseMeaning:'回避自省、不愿复盘、逃避抉择，不敢直面过往过错，迟迟无法向前走。'},
+  {id:'m21',name:'世界',en:'The World',keyword:'完成 · 圆满 · 成就',meaning:'一个周期即将圆满完成。庆祝你的成就，感受完整与满足。新的旅程即将开启。',reverseMeaning:'收尾拖延、完美主义、卡点停滞，过分纠结细节导致事情无法落地完成。'},
+  {id:'w1',name:'权杖王牌',en:'Ace of Wands',keyword:'灵感 · 新开始 · 热情',meaning:'一股新的创造力正在涌来。抓住这股热情的能量，大胆开始新的项目或冒险。',reverseMeaning:'热情消退、计划搁置、畏难退缩，新想法萌生却迟迟不敢动手，行动力完全不足。'},
+  {id:'w2',name:'权杖二',en:'Two of Wands',keyword:'规划 · 决定 · 远见',meaning:'站在十字路口，需要做出长远规划。你有足够的视野，勇敢选择那条让你兴奋的路。',reverseMeaning:'畏惧选择、安于现状、错失远方，纠结未知风险不肯踏出舒适圈，局限自身发展。'},
+  {id:'w3',name:'权杖三',en:'Three of Wands',keyword:'拓展 · 探索 · 前瞻',meaning:'你的努力开始结出果实。眼光放远，更大的机会正在路上。保持信心和行动力。',reverseMeaning:'消息延误、规划落空、眼界狭隘，期待的反馈迟迟不到，只顾眼前忽略长远布局。'},
+  {id:'w4',name:'权杖四',en:'Four of Wands',keyword:'庆祝 · 和谐 · 归属',meaning:'今天适合庆祝和团聚。享受稳定的幸福感，与重要的人分享喜悦。',reverseMeaning:'家庭争执、团队涣散、安稳破碎，原本和谐的氛围出现裂痕，聚会与计划被迫中断。'},
+  {id:'w5',name:'权杖五',en:'Five of Wands',keyword:'竞争 · 冲突 · 挑战',meaning:'周围可能存在竞争或分歧。把冲突当作成长的催化剂，在挑战中找到自己的位置。',reverseMeaning:'无谓争吵、好胜内耗、刻意对抗，为小事争执不休，争斗过后没有任何实质收获。'},
+  {id:'w6',name:'权杖六',en:'Six of Wands',keyword:'胜利 · 认可 · 荣耀',meaning:'你的努力得到了认可和回报。享受这份荣耀，你值得这份成功。',reverseMeaning:'骄傲自负、胜而骄矜、短暂荣光，取得一点成绩就张扬，得意过后极易迎来挫败。'},
+  {id:'w7',name:'权杖七',en:'Seven of Wands',keyword:'坚守 · 勇气 · 防御',meaning:'面对质疑和挑战，坚持你的立场。你有足够的力量守住自己的阵地。',reverseMeaning:'无力抵抗、被动妥协、独自硬扛，同时应对太多压力，身心透支想要直接摆烂放弃。'},
+  {id:'w8',name:'权杖八',en:'Eight of Wands',keyword:'迅速 · 进展 · 行动',meaning:'事情正在快速发展，保持节奏。这是一个适合果断行动、快速推进的时期。',reverseMeaning:'消息延迟、冲动行事、沟通误会，急促行事引发矛盾，流言蜚语打乱你的节奏。'},
+  {id:'w9',name:'权杖九',en:'Nine of Wands',keyword:'坚韧 · 毅力 · 警惕',meaning:'虽然疲惫，但胜利在望。咬紧牙关再坚持一下，你离目标已经很近了。',reverseMeaning:'过度防备、敏感多疑、自我设防，受过伤害后封闭内心，不肯接纳他人善意靠近。'},
+  {id:'w10',name:'权杖十',en:'Ten of Wands',keyword:'负担 · 责任 · 压力',meaning:'你承担了太多。学会适当放下一些重担，给自己喘息的空间。',reverseMeaning:'强行负重、不懂求助、自我压榨，包揽所有琐事不肯分担，长期透支身心损耗。'},
+  {id:'w11',name:'权杖侍从',en:'Page of Wands',keyword:'热情 · 探索 · 好消息',meaning:'保持好奇心和冒险精神。新的灵感和好消息正在路上，以开放的心态迎接。',reverseMeaning:'三分钟热度、冲动鲁莽、做事不深思，冒出想法立刻行动，极易半途出错。'},
+  {id:'w12',name:'权杖骑士',en:'Knight of Wands',keyword:'冒险 · 冲动 · 魅力',meaning:'今天适合大胆行动，但注意不要过于冲动。用你的热情和魅力去感染身边的人。',reverseMeaning:'暴躁急躁、行事莽撞、意气用事，被情绪支配冲动决策，不计后果惹出麻烦。'},
+  {id:'w13',name:'权杖王后',en:'Queen of Wands',keyword:'自信 · 独立 · 温暖',meaning:'展现你的自信和温暖。今天适合独立行动，用你的个人魅力影响周围的世界。',reverseMeaning:'脾气易怒、占有欲强、热情伤人，浓烈的情绪不加收敛，容易灼伤身边亲近的人。'},
+  {id:'w14',name:'权杖国王',en:'King of Wands',keyword:'领导力 · 远见 · 果断',meaning:'以领导者的姿态面对今天。有远见、有魄力，果断决策，带领团队走向成功。',reverseMeaning:'独断暴躁、控制欲爆棚、听不进劝，强势蛮横，只认可自己的行事标准。'},
+  {id:'c1',name:'圣杯王牌',en:'Ace of Cups',keyword:'新感情 · 直觉 · 爱',meaning:'一股新的情感能量正在流入你的生活。打开心扉，接受爱与被爱的可能。',reverseMeaning:'情感枯竭、封闭内心、拒绝爱意，难以接纳他人的温柔，对亲密关系充满抗拒。'},
+  {id:'c2',name:'圣杯二',en:'Two of Cups',keyword:'伴侣 · 连接 · 和谐',meaning:'今天适合建立或加深一段重要的关系。真诚的连接带来深层的满足。',reverseMeaning:'双向隔阂、沟通冷淡、关系失衡，友情或恋情失去共鸣，相处只剩敷衍与客套。'},
+  {id:'c3',name:'圣杯三',en:'Three of Cups',keyword:'友谊 · 聚会 · 欢乐',meaning:'今天适合与朋友相聚。分享快乐，在社交中感受温暖和支持。',reverseMeaning:'虚假社交、狂欢过后空虚、八卦是非，表面热闹的聚会暗藏攀比与闲话。'},
+  {id:'c4',name:'圣杯四',en:'Four of Cups',keyword:'冷漠 · 反思 · 不满',meaning:'你可能对现状感到倦怠。重新审视身边被忽略的机会，不要因麻木而错过。',reverseMeaning:'无视美好、麻木倦怠、不知满足，身边已有温柔机遇，却沉溺负面情绪视而不见。'},
+  {id:'c5',name:'圣杯五',en:'Five of Cups',keyword:'失落 · 遗憾 · 悲伤',meaning:'允许自己感受悲伤，但别忘了身后还有希望。失去的同时，仍有珍贵之物留存。',reverseMeaning:'沉溺遗憾、紧盯失去、忽略拥有，一直纠结已经错过的人和事，看不见身边留存的温暖。'},
+  {id:'c6',name:'圣杯六',en:'Six of Cups',keyword:'怀旧 · 童年 · 纯真',meaning:'今天适合回忆美好的过去。与老友重聚，或让内心的孩子出来玩耍。',reverseMeaning:'沉溺过去、孩童心性、依赖他人，放不下旧回忆，遇事习惯性逃避不肯独立成长。'},
+  {id:'c7',name:'圣杯七',en:'Seven of Cups',keyword:'幻想 · 选择 · 诱惑',meaning:'面前有很多选择，但不是每个都如表面那般美好。保持清醒，区分幻想与现实。',reverseMeaning:'空想泛滥、欲望杂乱、分不清虚实，脑海满是不切实际幻想，却没有落地行动。'},
+  {id:'c8',name:'圣杯八',en:'Eight of Cups',keyword:'离开 · 放下 · 寻找',meaning:'有时候离开是为了找到更好的。勇敢地放下不再满足你的事物，去追寻更深层的意义。',reverseMeaning:'逃避离开、盲目出走、冲动断联，一时情绪上头舍弃当下，事后容易心生后悔。'},
+  {id:'c9',name:'圣杯九',en:'Nine of Cups',keyword:'满足 · 愿望 · 幸福',meaning:'愿望牌！你的心愿很可能实现。享受当下的满足感，你值得拥有这份幸福。',reverseMeaning:'虚假满足、自我欺骗、情绪虚荣，表面看似圆满，内心依旧空虚渴望更多慰藉。'},
+  {id:'c10',name:'圣杯十',en:'Ten of Cups',keyword:'圆满 · 家庭 · 和谐',meaning:'情感生活圆满美好。享受与家人和爱人在一起的温馨时光，这就是最大的幸福。',reverseMeaning:'家庭情感裂痕、理想与现实落差，看似美满的关系暗藏难以调和的情绪矛盾。'},
+  {id:'c11',name:'圣杯侍从',en:'Page of Cups',keyword:'创意 · 敏感 · 好消息',meaning:'跟随你的灵感和直觉。一个与情感相关的好消息可能即将到来。保持心灵的开放。',reverseMeaning:'敏感玻璃心、情绪泛滥、幻想恋爱，容易沉溺暧昧，分不清真心与客套。'},
+  {id:'c12',name:'圣杯骑士',en:'Knight of Cups',keyword:'浪漫 · 追求 · 理想',meaning:'今天适合追求心中所爱。用浪漫和真诚去表达你的感情，理想主义是你的力量。',reverseMeaning:'恋爱脑、空泛浪漫、逃避现实，只追求情绪氛围感，不愿承担感情里的责任。'},
+  {id:'c13',name:'圣杯王后',en:'Queen of Cups',keyword:'共情 · 直觉 · 关怀',meaning:'用温柔和同理心对待今天。你的直觉很敏锐，信任它，同时照顾好自己的情绪。',reverseMeaning:'情绪内耗、共情泛滥、自我委屈，一味迁就他人，压抑自身真实感受讨好别人。'},
+  {id:'c14',name:'圣杯国王',en:'King of Cups',keyword:'平衡 · 智慧 · 从容',meaning:'在情感的风浪中保持从容。用成熟的智慧处理人际关系，做到理性与感性的平衡。',reverseMeaning:'压抑情绪、冷漠伪装、回避交心，刻意克制内心，从不向任何人展露柔软一面。'},
+  {id:'s1',name:'宝剑王牌',en:'Ace of Swords',keyword:'真相 · 清晰 · 突破',meaning:'思维如利剑般清晰。今天适合做出理性的判断，用真相斩断混乱。',reverseMeaning:'言语伤人、思绪混乱、判断偏颇，说话不经思考引发争执，理性被负面情绪掩盖。'},
+  {id:'s2',name:'宝剑二',en:'Two of Swords',keyword:'僵局 · 抉择 · 回避',meaning:'你可能在逃避一个困难的决定。放下防备，面对真相，才能打破僵局。',reverseMeaning:'逃避真相、自我欺骗、拒绝看清，刻意蒙蔽双眼回避矛盾，拖延只会让问题加重。'},
+  {id:'s3',name:'宝剑三',en:'Three of Swords',keyword:'心碎 · 悲伤 · 释放',meaning:'痛苦需要被面对而不是回避。允许自己感受伤痛，这是治愈的开始。雨后会天晴。',reverseMeaning:'走出伤痛、放下流言、自愈释怀，伤心的阶段即将过去，不必反复回味伤害你的话语。'},
+  {id:'s4',name:'宝剑四',en:'Four of Swords',keyword:'休息 · 恢复 · 沉思',meaning:'你的身心需要休息。暂时放下纷争，在安静中恢复力量。休息不是软弱。',reverseMeaning:'过度躺平、逃避现实、昏睡麻木，借休息为由一味摆烂，回避该处理的难题。'},
+  {id:'s5',name:'宝剑五',en:'Five of Swords',keyword:'冲突 · 胜败 · 代价',meaning:'赢了争论却可能输了关系。今天注意沟通方式，不是每场战斗都值得参与。',reverseMeaning:'赢了争执输了人心、刻薄好辩，靠言语争辩取胜，却彻底消耗身边人的好感。'},
+  {id:'s6',name:'宝剑六',en:'Six of Swords',keyword:'过渡 · 前行 · 疗愈',meaning:'正在从困难中走出。虽然旅途艰辛，但你正在向更好的方向前进。保持前行。',reverseMeaning:'沉溺伤痛、不肯前行、负重赶路，明明可以放下过往，却执意带着旧伤往前走。'},
+  {id:'s7',name:'宝剑七',en:'Seven of Swords',keyword:'策略 · 隐秘 · 欺骗',meaning:'今天需要运用策略和智慧。注意身边是否有不诚实的行为，同时也要反思自己。',reverseMeaning:'投机取巧、暗中算计、逃避责任，靠小聪明规避问题，谎言与隐瞒迟早会暴露。'},
+  {id:'s8',name:'宝剑八',en:'Eight of Swords',keyword:'困境 · 限制 · 自我束缚',meaning:'你感受到的限制可能来自内心。摘下眼罩，你会发现逃脱困境的路其实一直在。',reverseMeaning:'自我束缚、内心枷锁、主动内耗，困住你的从来不是外界，而是自己固化的想法。'},
+  {id:'s9',name:'宝剑九',en:'Nine of Swords',keyword:'焦虑 · 噩梦 · 担忧',meaning:'深夜的忧虑被放大了。大多数担忧不会成真。找人倾诉，让恐惧在阳光下消散。',reverseMeaning:'深夜焦虑、脑补恐惧、失眠内耗，过度担忧未发生的坏事，被胡思乱想折磨心神。'},
+  {id:'s10',name:'宝剑十',en:'Ten of Swords',keyword:'终结 · 底线 · 重生',meaning:'最坏的情况已经发生，但这也意味着触底反弹。旧的痛苦结束了，新的篇章即将开始。',reverseMeaning:'绝境翻盘、彻底结束旧痛苦，最难熬的阶段已经落幕，旧的伤害会彻底翻篇。'},
+  {id:'s11',name:'宝剑侍从',en:'Page of Swords',keyword:'好奇 · 敏锐 · 真相',meaning:'保持敏锐的观察力和求知欲。今天适合学习新事物，但要注意言辞的分寸。',reverseMeaning:'搬弄是非、多疑猜忌、小道消息缠身，轻信流言，随口传播伤人的闲话。'},
+  {id:'s12',name:'宝剑骑士',en:'Knight of Swords',keyword:'果断 · 直接 · 冲动',meaning:'行动迅速而果断，但注意不要伤害他人。用清晰的思维开路，同时保持同理心。',reverseMeaning:'言辞刻薄、急躁抬杠、尖锐伤人，说话直击他人痛处，争辩时不留丝毫情面。'},
+  {id:'s13',name:'宝剑王后',en:'Queen of Swords',keyword:'独立 · 理性 · 洞察',meaning:'用理性和洞察力面对今天。不被情感左右，独立思考，做出明智的判断。',reverseMeaning:'刻薄挑剔、冷眼评判、过度理性伤人，习惯用犀利言语打击身边人的自信。'},
+  {id:'s14',name:'宝剑国王',en:'King of Swords',keyword:'权威 · 公正 · 清晰',meaning:'以理性和公正的态度处理事务。你的思维清晰而有力，适合做重要决策。',reverseMeaning:'冷酷严苛、不近人情、教条死板，只讲规则不讲人情，缺少包容与柔软。'},
+  {id:'p1',name:'星币王牌',en:'Ace of Pentacles',keyword:'机会 · 繁荣 · 新起点',meaning:'一个与物质世界相关的新机会正在出现。可能是工作、财务或健康方面的好开始。',reverseMeaning:'错失财富机遇、资源损耗、求财急躁，急于获利反而容易亏损，不宜盲目投资。'},
+  {id:'p2',name:'星币二',en:'Two of Pentacles',keyword:'平衡 · 适应 · 多任务',meaning:'今天需要在多个事务之间保持平衡。灵活应对变化，像杂耍一样掌控全局。',reverseMeaning:'收支失衡、分身乏术、资金周转困难，多线事务拉扯让你身心疲惫，需取舍减负。'},
+  {id:'p3',name:'星币三',en:'Three of Pentacles',keyword:'合作 · 技艺 · 团队',meaning:'今天适合团队合作。展示你的专业技能，在协作中创造更好的成果。',reverseMeaning:'合作分歧、方案搁置、团队内耗，沟通不到位导致项目进度停滞，他人不认可你的付出。'},
+  {id:'p4',name:'星币四',en:'Four of Pentacles',keyword:'保守 · 安全 · 控制',meaning:'你可能过于执着于安全感。适度控制是好的，但不要让恐惧阻碍了流动和成长。',reverseMeaning:'固执守财、心胸狭隘、害怕分享，紧抓现有利益不肯放手，反而阻碍新机会到来。'},
+  {id:'p5',name:'星币五',en:'Five of Pentacles',keyword:'困难 · 匮乏 · 援助',meaning:'虽然可能面临物质或精神上的困难，但帮助就在身边。不要羞于寻求帮助。',reverseMeaning:'走出低谷、拒绝自卑、寻求帮助，当下窘迫只是暂时，主动开口就能获得支援。'},
+  {id:'p6',name:'星币六',en:'Six of Pentacles',keyword:'慷慨 · 给予 · 分享',meaning:'今天适合分享和给予。无论是时间、金钱还是关爱，慷慨会带来更大的丰盛。',reverseMeaning:'人情失衡、施舍绑架、利益不对等，要么一味讨好付出，要么吝啬不愿帮扶他人。'},
+  {id:'p7',name:'星币七',en:'Seven of Pentacles',keyword:'耐心 · 投资 · 等待',meaning:'你的付出正在生长，但果实还需要时间。保持耐心，继续浇灌，收获终将到来。',reverseMeaning:'半途而废、焦虑等待、怀疑付出，长期投入看不到回报就急于放弃，缺少长久耐心。'},
+  {id:'p8',name:'星币八',en:'Eight of Pentacles',keyword:'勤奋 · 精进 · 专注',meaning:'今天适合专注于技能的提升。勤奋和专注会带来实质性的进步。享受精进的过程。',reverseMeaning:'敷衍摆烂、技艺浮躁、重复内耗，机械劳作却不愿打磨提升，做事只求速成不求质量。'},
+  {id:'p9',name:'星币九',en:'Nine of Pentacles',keyword:'富足 · 独立 · 享受',meaning:'你已经创造了丰裕的生活。今天适合享受劳动成果，感受独立与自足的美好。',reverseMeaning:'空虚独处、物质填补内心、孤独自困，拥有安稳生活却感受不到快乐，缺少情感陪伴。'},
+  {id:'p10',name:'星币十',en:'Ten of Pentacles',keyword:'传承 · 家族 · 永恒',meaning:'家庭的温暖和物质的丰盛交织在一起。享受天伦之乐，为长远的幸福投资。',reverseMeaning:'家庭财产纠纷、家族隔阂、物质拖累，财富反而成为家人矛盾的导火索。'},
+  {id:'p11',name:'星币侍从',en:'Page of Pentacles',keyword:'学习 · 勤奋 · 新机会',meaning:'一个与学习或工作相关的新机会正在出现。脚踏实地，用勤奋铺就成功之路。',reverseMeaning:'学习浮躁、三分钟热度、懈怠偷懒，面对新机会缺乏踏实坚持的耐心。'},
+  {id:'p12',name:'星币骑士',en:'Knight of Pentacles',keyword:'踏实 · 可靠 · 坚持',meaning:'用稳健的步伐前进。虽然速度不快，但每一步都扎实可靠。坚持就是胜利。',reverseMeaning:'顽固迟钝、拖延摆烂、不知变通，一味埋头苦干却不懂优化效率。'},
+  {id:'p13',name:'星币王后',en:'Queen of Pentacles',keyword:'务实 · 关怀 · 富足',meaning:'今天适合关注实际的生活需求。用温暖和务实的态度照顾自己和身边的人。',reverseMeaning:'物质焦虑、疏于自我照料、过度付出，一味讨好他人忽略自身需求。'},
+  {id:'p14',name:'星币国王',en:'King of Pentacles',keyword:'成功 · 财富 · 掌控',meaning:'你正处于物质和精神的丰收期。以稳健和智慧管理你的财富，享受成功的果实。',reverseMeaning:'吝啬守财、唯利是图、事业僵化，过度看重物质，忽略情感与生活平衡。'}
+];
+
+const STORAGE_KEY = 'tarot_daily_v3';
+
+// Storage helpers
+function getStorage() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function setStorage(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function getToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+function hasDrawnToday() {
+  const data = getStorage();
+  return data.today === getToday() && data.todayCard;
+}
+// 抽塔罗牌主函数
+function drawTarotCard() {
+  const randomIndex = Math.floor(Math.random() * CARDS.length);
+  const pickCard = CARDS[randomIndex];
+  const isReverse = Math.random() > 0.5;
+
+  let explainContent = "";
+  if(isReverse){
+    explainContent = `【逆位 · ${pickCard.keyword}】${pickCard.reverseMeaning}`;
+  }else{
+    explainContent = `【正位 · ${pickCard.keyword}】${pickCard.meaning}`;
+  }
+
+  // 日记面板同步文字
+  document.getElementById("write-card-name").innerText = pickCard.name + (isReverse ? "（逆位）" : "（正位）");
+  const writeTextbox = document.getElementById('write-date');
+  if(writeTextbox) writeTextbox.innerText = explainContent;
+
+  // 左侧卡牌弹窗同步文字
+  document.getElementById("display-card-name").innerText = pickCard.name + (isReverse ? "（逆位）" : "（正位）");
+  const popTextbox = document.getElementById('display-card-position');
+  if(popTextbox) popTextbox.innerText = explainContent;
+
+  // 存入缓存
+  setStorage({
+    today: getToday(),
+    todayCard: pickCard,
+    cardReverse: isReverse
+  });
+}
+
+// Particles
+function initParticles() {
+  const cv = document.getElementById('particles');
+  const ctx = cv.getContext('2d');
+  let particles = [];
+  
+  function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+  resize();
+  addEventListener('resize', resize);
+  
+  for (let i = 0; i < 40; i++) {
+    particles.push({
+      x: Math.random() * cv.width,
+      y: Math.random() * cv.height,
+      sz: Math.random() * 1.5 + 0.3,
+      sx: (Math.random() - 0.5) * 0.2,
+      sy: -Math.random() * 0.3 - 0.05,
+      op: Math.random() * 0.3 + 0.05,
+      ph: Math.random() * Math.PI * 2
+    });
+  }
+  
+  (function anim() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    particles.forEach(p => {
+      p.x += p.sx; p.y += p.sy; p.ph += 0.015;
+      const o = p.op * (0.5 + 0.5 * Math.sin(p.ph));
+      if (p.y < -10) { p.y = cv.height + 10; p.x = Math.random() * cv.width; }
+      if (p.x < -10) p.x = cv.width + 10;
+      if (p.x > cv.width + 10) p.x = -10;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.sz, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(168,152,120,${o})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(anim);
+  })();
+}
+
+// Create arc cards - all 78
+function createArc() {
+  const con = document.getElementById('arc-container');
+  con.innerHTML = "";
+
+  const cW = con.offsetWidth;
+  const cH = con.offsetHeight;
+
+  const cw = parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--card-w'));
+
+  const ch = parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--card-h'));
+
+  const shuffled = [...CARDS].sort(() => Math.random() - 0.5);
+  const total = shuffled.length;
+
+  // 🎯 ① 更松的弧
+  const arcAngle = 140; // ❗减少重叠
+  const startAngle = -arcAngle / 2;
+  const step = arcAngle / (total - 1);
+
+  // 🎯 ② 更大半径（更展开）
+  const radius = Math.min(cW * 0.65, 720);
+
+  shuffled.forEach((card, i) => {
+
+    const angle = startAngle + i * step;
+    const rad = angle * Math.PI / 180;
+
+    const x = cW / 2 + Math.sin(rad) * radius - cw / 2;
+    const y = cH * 0.78 - Math.cos(rad) * radius * 0.45;
+
+    const rot = angle * 0.3;
+
+     const el = document.createElement('div');
+    el.className = 'arc-card';
+    el.dataset.cardId = card.id;
+    el.style.setProperty('--base-transform', `translate(${x}px, ${y}px) rotate(${rot}deg)`);
+    el.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+    el.style.zIndex = i < total / 2 ? i : total - i;
+    el.innerHTML = `<div class="card-body"><img src="assets/cards/back.png" alt=""></div>`;
+    el.addEventListener('click', () => handleCardClick(card, el));
+    con.appendChild(el);
+    
+    setTimeout(() => el.classList.add('dealt'), 200 + i * 40);
+  });
+}
+
+// Handle card click
+let isProcessing = false;
+let currentCard = null;
+let isReversed = false;
+
+function handleCardClick(card, el) {
+  if (isProcessing) return;
+  isProcessing = true;
+  currentCard = card;
+  isReversed = Math.random() < 0.5; // 50% chance of reversed
+  
+  // Dim other cards
+  document.querySelectorAll('.arc-card').forEach(c => {
+    if (c !== el) c.classList.add('dimmed');
+  });
+  
+  // Get positions
+  const rect = el.getBoundingClientRect();
+  const startX = rect.left + rect.width / 2;
+  const startY = rect.top + rect.height / 2;
+  
+  const flyingCard = document.getElementById('flying-card');
+  const frontImg = document.getElementById('flying-front-img');
+  frontImg.src = `assets/cards/face/${card.id}.png`;
+  if (isReversed) {
+    frontImg.style.transform = 'rotate(180deg)';
+  } else {
+    frontImg.style.transform = '';
+  }
+  
+  // Position flying card at start
+  flyingCard.style.left = startX - rect.width / 2 + 'px';
+  flyingCard.style.top = startY - rect.height / 2 + 'px';
+  flyingCard.style.width = rect.width + 'px';
+  flyingCard.style.height = rect.height + 'px';
+  
+  // Animate to left side
+  setTimeout(() => {
+    flyingCard.classList.add('active');
+    const leftX = innerWidth * 0.25 - 140;
+    const centerY = innerHeight / 2 - 228;
+    flyingCard.style.left = leftX + 'px';
+    flyingCard.style.top = centerY + 'px';
+    flyingCard.style.width = '280px';
+    flyingCard.style.height = '456px';
+    
+    // Flip after moving
+    setTimeout(() => {
+      flyingCard.classList.add('flipping');
+      
+      // Show writing area after flip
+      setTimeout(() => showWritingArea(card), 1000);
+    }, 800);
+  }, 100);
+}
+
+// Show writing area
+function showWritingArea(card) {
+  // Set card display
+  const displayCard = document.getElementById('display-card');
+  const displayImg = document.getElementById('display-card-img');
+  displayImg.src = `assets/cards/face/${card.id}.png`;
+  if (isReversed) {
+    displayCard.classList.add('reversed');
+  } else {
+    displayCard.classList.remove('reversed');
+  }
+  
+  document.getElementById('display-card-name').textContent = `${card.name} · ${card.en}`;
+  document.getElementById('display-card-position').textContent = isReversed ? '逆位' : '正位';
+  
+  // Set write page
+  document.getElementById('write-date').textContent = getToday();
+  document.getElementById('write-card-name').textContent = `${card.name} (${isReversed ? '逆位' : '正位'})`;
+  document.getElementById('diary-text-input').value = '';
+  
+  // Load history pages
+  loadHistoryPages(card.id);
+  
+  document.getElementById('writing-area').classList.add('visible');
+  document.getElementById('quill').classList.add('visible');
+}
+
+// Load history pages for this card
+function loadHistoryPages(cardId) {
+  const data = getStorage();
+  const history = data.cardHistory && data.cardHistory[cardId];
+  const book = document.getElementById('diary-book');
+  
+  // Remove old history pages
+  book.querySelectorAll('.diary-page:not(.diary-write-page)').forEach(p => p.remove());
+  
+  if (history && history.length > 0) {
+    history.forEach((entry, idx) => {
+      const page = document.createElement('div');
+      page.className = 'diary-page';
+      page.dataset.index = idx;
+      
+      let imagesHtml = '';
+      if (entry.images && entry.images.length > 0) {
+        imagesHtml = '<div class="diary-images">' + 
+          entry.images.map(src => `<div class="diary-img-item"><img src="${src}" alt="history"></div>`).join('') +
+          '</div>';
+      }
+      
+      page.innerHTML = `
+        <div class="diary-page-content">
+          <div class="diary-date">${entry.date}</div>
+          <div class="diary-card-name">${entry.cardName} (${entry.reversed ? '逆位' : '正位'})</div>
+          <div class="diary-text-display">${entry.diary || '(无内容)'}</div>
+          ${imagesHtml}
+          <div class="diary-nav">
+            <button class="diary-nav-btn" onclick="flipToPage(${idx - 1})" ${idx === 0 ? 'disabled' : ''}>上一页</button>
+            <span style="color:#6a5a45;font-size:0.75rem;">${idx + 1} / ${history.length + 1}</span>
+            <button class="diary-nav-btn" onclick="flipToPage(${idx + 1})">下一页</button>
+          </div>
+        </div>
+      `;
+      book.insertBefore(page, document.getElementById('write-page'));
+    });
+  }
+}
+
+// Flip to page
+let currentPage = -1; // -1 means write page
+function flipToPage(targetPage) {
+  const book = document.getElementById('diary-book');
+  const pages = book.querySelectorAll('.diary-page');
+  const writePage = document.getElementById('write-page');
+  const historyPages = book.querySelectorAll('.diary-page:not(.diary-write-page)');
+  const totalPages = historyPages.length;
+  
+  if (targetPage < -1 || targetPage >= totalPages) return;
+  
+  // Reset all pages
+  pages.forEach(p => p.classList.remove('flipping'));
+  
+  if (targetPage === -1) {
+    // Show write page
+    writePage.style.zIndex = 10;
+    historyPages.forEach(p => p.style.zIndex = 1);
+  } else {
+    // Flip pages to show target
+    historyPages.forEach((p, idx) => {
+      if (idx <= targetPage) {
+        p.classList.add('flipping');
+        p.style.zIndex = totalPages - idx;
+      } else {
+        p.style.zIndex = 1;
+      }
+    });
+    writePage.style.zIndex = 0;
+  }
+  
+  currentPage = targetPage;
+}
+
+// Quill follows text cursor
+function updateQuillPosition() {
+  const textarea = document.getElementById('diary-text-input');
+  const quill = document.getElementById('quill');
+  if (!textarea || !quill) return;
+
+  const mirror = document.createElement('div');
+  const computed = window.getComputedStyle(textarea);
+
+  mirror.style.position = 'absolute';
+  mirror.style.visibility = 'hidden';
+  mirror.style.whiteSpace = 'pre-wrap';
+  mirror.style.wordWrap = 'break-word';
+  mirror.style.width = computed.width;
+  mirror.style.fontFamily = computed.fontFamily;
+  mirror.style.fontSize = computed.fontSize;
+  mirror.style.fontWeight = computed.fontWeight;
+  mirror.style.lineHeight = computed.lineHeight;
+  mirror.style.padding = computed.padding;
+  mirror.style.border = computed.border;
+
+  // 核心修复：镜像对齐输入框位置
+  const textareaRect = textarea.getBoundingClientRect();
+  mirror.style.left = textareaRect.left + window.scrollX + 'px';
+  mirror.style.top = textareaRect.top + window.scrollY + 'px';
+
+  const textBefore = textarea.value.substring(0, textarea.selectionStart);
+  mirror.textContent = textBefore;
+
+  const marker = document.createElement('span');
+  marker.textContent = '|';
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+
+  // 计算光标真实位置
+  const markerRect = marker.getBoundingClientRect();
+  const quillX = markerRect.left + 8;
+  const quillY = markerRect.top - 16;
+
+  quill.style.left = quillX + 'px';
+  quill.style.top = quillY + 'px';
+  quill.classList.add('visible');
+
+  document.body.removeChild(mirror);
+}
+
+// 关键：绑定所有触发事件（必须加在函数外面）
+const textareaDom = document.getElementById('diary-text-input');
+textareaDom.addEventListener('click', updateQuillPosition);
+textareaDom.addEventListener('keyup', updateQuillPosition);
+textareaDom.addEventListener('input', updateQuillPosition);
+textareaDom.addEventListener('select', updateQuillPosition);
+
+
+
+// Update quill position on input and selection change
+document.addEventListener('DOMContentLoaded', () => {
+  const textarea = document.getElementById('diary-text-input');
+  const quill = document.getElementById('quill');
+  
+  if (textarea && quill) {
+    textarea.addEventListener('input', () => {
+      quill.classList.add('visible');
+      updateQuillPosition();
+    });
+    
+    textarea.addEventListener('click', updateQuillPosition);
+    textarea.addEventListener('keyup', updateQuillPosition);
+    textarea.addEventListener('focus', () => {
+      quill.classList.add('visible');
+      setTimeout(updateQuillPosition, 100);
+    });
+  }
+});
+
+// Save diary
+function saveDiary() {
+  const data = getStorage();
+  if (!data.cardHistory) data.cardHistory = {};
+  
+  const cardId = currentCard.id;
+  if (!data.cardHistory[cardId]) {
+    data.cardHistory[cardId] = [];
+  }
+  
+  const diaryText = document.getElementById('diary-text-input').value;
+  data.cardHistory[cardId].push({
+    date: getToday(),
+    cardName: currentCard.name,
+    reversed: isReversed,
+    diary: diaryText,
+    images: [...uploadedImages]
+  });
+  
+  // Save today's draw
+  data.today = getToday();
+  data.todayCard = cardId;
+  
+  setStorage(data);
+  
+  // Show feedback
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '已保存';
+  setTimeout(() => { btn.textContent = '保存'; }, 1500);
+  
+  // Clear uploaded images
+  uploadedImages = [];
+  renderImages();
+  
+  // Reload history
+  loadHistoryPages(cardId);
+}
+
+// Close writing area
+function closeWritingArea() {
+  document.getElementById('writing-area').classList.remove('visible');
+  document.getElementById('quill').classList.remove('visible');
+  document.getElementById('flying-card').classList.remove('active', 'flipping');
+  
+  // Clear uploaded images
+  uploadedImages = [];
+  renderImages();
+  
+  // Restore cards
+  document.querySelectorAll('.arc-card').forEach(c => c.classList.remove('dimmed'));
+  isProcessing = false;
+}
+
+// Init
+function init() {
+  initParticles();
+  
+  // Verification
+  const verifyInput = document.getElementById('verify-input');
+  const verifyBox = document.getElementById('verify-box');
+  const startBtn = document.getElementById('start-btn');
+  const verifyError = document.getElementById('verify-error');
+  
+  function checkPassword() {
+    if (verifyInput.value.trim() === '海豚') {
+      verifyBox.classList.add('hidden');
+      startBtn.classList.remove('hidden');
+    } else if (verifyInput.value.trim() !== '') {
+      verifyError.classList.add('show');
+      verifyInput.value = '';
+      setTimeout(() => verifyError.classList.remove('show'), 2000);
+    }
+  }
+  
+  // Use change event for better Chinese input support
+  verifyInput.addEventListener('change', checkPassword);
+  verifyInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      checkPassword();
+    }
+  });
+  
+  // Start button
+  startBtn.addEventListener('click', () => {
+    startBtn.classList.add('hidden');
+    document.getElementById('card-spread').classList.add('visible');
+    createArc();
+  });
+  
+  // Save and close buttons
+  document.getElementById('save-btn').addEventListener('click', saveDiary);
+  document.getElementById('close-btn').addEventListener('click', closeWritingArea);
+  
+  // Image upload
+  document.getElementById('diary-img-input').addEventListener('change', handleImageUpload);
+}
+
+// Handle image upload
+let uploadedImages = [];
+function handleImageUpload(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      uploadedImages.push(event.target.result);
+      renderImages();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderImages() {
+  const container = document.getElementById('diary-images');
+  container.innerHTML = '';
+  uploadedImages.forEach((src, idx) => {
+    const item = document.createElement('div');
+    item.className = 'diary-img-item';
+    item.innerHTML = `
+      <img src="${src}" alt="uploaded">
+      <button class="remove-img" onclick="removeImage(${idx})">×</button>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function removeImage(idx) {
+  uploadedImages.splice(idx, 1);
+  renderImages();
+}
+
+// 页面加载时读取今日已抽的卡牌缓存
+if(hasDrawnToday()){
+  const saveData = getStorage();
+  const saveCard = saveData.todayCard;
+  const saveReverse = saveData.cardReverse;
+
+  let cacheText = "";
+  if(saveReverse){
+    cacheText = `【逆位 · ${saveCard.keyword}】${saveCard.reverseMeaning}`;
+  }else{
+    cacheText = `【正位 · ${saveCard.keyword}】${saveCard.meaning}`;
+  }
+
+  // 日记页
+  document.getElementById("write-card-name").innerText = saveCard.name + (saveReverse ? "（逆位）" : "（正位）");
+  const writeTextbox = document.getElementById('write-date');
+  if(writeTextbox) writeTextbox.innerText = cacheText;
+
+  // 左侧卡牌弹窗
+  document.getElementById("display-card-name").innerText = saveCard.name + (saveReverse ? "（逆位）" : "（正位）");
+  const popTextbox = document.getElementById('display-card-position');
+  if(popTextbox) popTextbox.innerText = cacheText;
+}
+
+const flyCard = document.getElementById("flying-card");
+if(flyCard){
+  flyCard.addEventListener("click", drawTarotCard);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
