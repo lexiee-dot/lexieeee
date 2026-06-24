@@ -910,7 +910,6 @@ function showWritingArea(card) {
   loadHistoryPages(card.id);
   
   document.getElementById('writing-area').classList.add('visible');
-  document.getElementById('quill').classList.add('visible');
   
   document.getElementById('card-info-below').classList.add('revealed');
   document.getElementById('write-page').classList.add('revealed');
@@ -1050,27 +1049,14 @@ textareaDom.addEventListener('click', updateQuillPosition);
 textareaDom.addEventListener('keyup', updateQuillPosition);
 textareaDom.addEventListener('input', updateQuillPosition);
 textareaDom.addEventListener('select', updateQuillPosition);
-
-
-
-// Update quill position on input and selection change
-document.addEventListener('DOMContentLoaded', () => {
-  const textarea = document.getElementById('diary-text-input');
+textareaDom.addEventListener('focus', () => {
   const quill = document.getElementById('quill');
-  
-  if (textarea && quill) {
-    textarea.addEventListener('input', () => {
-      quill.classList.add('visible');
-      updateQuillPosition();
-    });
-    
-    textarea.addEventListener('click', updateQuillPosition);
-    textarea.addEventListener('keyup', updateQuillPosition);
-    textarea.addEventListener('focus', () => {
-      quill.classList.add('visible');
-      setTimeout(updateQuillPosition, 100);
-    });
-  }
+  quill.classList.add('visible');
+  setTimeout(updateQuillPosition, 50);
+});
+textareaDom.addEventListener('blur', () => {
+  const quill = document.getElementById('quill');
+  quill.classList.remove('visible');
 });
 
 // Save diary
