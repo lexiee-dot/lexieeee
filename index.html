@@ -285,14 +285,41 @@ body::before {
 #card-info-below {
   text-align: center;
   color: var(--gold);
+  max-width: 320px;
 }
 #card-info-below .card-name {
   font-size: 1.2rem;
   margin-bottom: 5px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
 }
 #card-info-below .card-position {
   font-size: 0.8rem;
   color: var(--gold-dim);
+  margin-bottom: 15px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s;
+}
+#card-info-below .card-meaning {
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: var(--cream);
+  text-align: left;
+  padding: 15px;
+  background: rgba(20, 18, 15, 0.6);
+  border: 1px solid rgba(168, 152, 120, 0.3);
+  border-radius: 6px;
+  opacity: 0;
+  transform: translateY(15px);
+  transition: opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s;
+}
+#card-info-below.revealed .card-name,
+#card-info-below.revealed .card-position,
+#card-info-below.revealed .card-meaning {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Diary - right side */
@@ -340,7 +367,24 @@ body::before {
   font-family: var(--font-parchment);
   font-size: 1.1rem;
   color: #4a3a25;
+  margin-bottom: 10px;
+}
+.diary-card-meaning {
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: #5a4a35;
+  padding: 10px 12px;
+  background: rgba(90, 74, 53, 0.1);
+  border-left: 3px solid rgba(90, 74, 53, 0.4);
   margin-bottom: 15px;
+  border-radius: 2px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
+}
+.diary-page.revealed .diary-card-meaning {
+  opacity: 1;
+  transform: translateY(0);
 }
 .diary-text-display {
   flex: 1;
@@ -526,6 +570,7 @@ body::before {
     <div id="card-info-below">
       <div class="card-name" id="display-card-name"></div>
       <div class="card-position" id="display-card-position"></div>
+      <div class="card-meaning" id="display-card-meaning"></div>
     </div>
   </div>
   <div id="diary-container">
@@ -535,6 +580,7 @@ body::before {
         <div class="diary-page-content">
           <div class="diary-date" id="write-date"></div>
           <div class="diary-card-name" id="write-card-name"></div>
+          <div class="diary-card-meaning" id="write-card-meaning"></div>
           <textarea class="diary-text-input" id="diary-text-input" placeholder="写下你的感悟..."></textarea>
           <div class="diary-images" id="diary-images"></div>
           <div class="diary-actions">
@@ -665,17 +711,14 @@ function drawTarotCard() {
     explainContent = `【正位 · ${pickCard.keyword}】${pickCard.meaning}`;
   }
 
-  // 日记面板同步文字
   document.getElementById("write-card-name").innerText = pickCard.name + (isReverse ? "（逆位）" : "（正位）");
-  const writeTextbox = document.getElementById('write-date');
-  if(writeTextbox) writeTextbox.innerText = explainContent;
+  document.getElementById("write-card-meaning").innerText = explainContent;
+  document.getElementById('write-date').innerText = getToday();
 
-  // 左侧卡牌弹窗同步文字
-  document.getElementById("display-card-name").innerText = pickCard.name + (isReverse ? "（逆位）" : "（正位）");
-  const popTextbox = document.getElementById('display-card-position');
-  if(popTextbox) popTextbox.innerText = explainContent;
+  document.getElementById("display-card-name").innerText = `${pickCard.name} · ${pickCard.en}`;
+  document.getElementById("display-card-position").innerText = isReverse ? '逆位' : '正位';
+  document.getElementById("display-card-meaning").innerText = explainContent;
 
-  // 存入缓存
   setStorage({
     today: getToday(),
     todayCard: pickCard,
@@ -780,14 +823,24 @@ function handleCardClick(card, el) {
   if (isProcessing) return;
   isProcessing = true;
   currentCard = card;
-  isReversed = Math.random() < 0.5; // 50% chance of reversed
+  isReversed = Math.random() < 0.5;
   
-  // Dim other cards
+  const meaningText = isReversed
+    ? `【逆位 · ${card.keyword}】${card.reverseMeaning}`
+    : `【正位 · ${card.keyword}】${card.meaning}`;
+  
+  document.getElementById('display-card-name').textContent = `${card.name} · ${card.en}`;
+  document.getElementById('display-card-position').textContent = isReversed ? '逆位' : '正位';
+  document.getElementById('display-card-meaning').textContent = meaningText;
+  
+  document.getElementById('write-date').textContent = getToday();
+  document.getElementById('write-card-name').textContent = `${card.name} (${isReversed ? '逆位' : '正位'})`;
+  document.getElementById('write-card-meaning').textContent = meaningText;
+  
   document.querySelectorAll('.arc-card').forEach(c => {
     if (c !== el) c.classList.add('dimmed');
   });
   
-  // Get positions
   const rect = el.getBoundingClientRect();
   const startX = rect.left + rect.width / 2;
   const startY = rect.top + rect.height / 2;
@@ -801,13 +854,11 @@ function handleCardClick(card, el) {
     frontImg.style.transform = '';
   }
   
-  // Position flying card at start
   flyingCard.style.left = startX - rect.width / 2 + 'px';
   flyingCard.style.top = startY - rect.height / 2 + 'px';
   flyingCard.style.width = rect.width + 'px';
   flyingCard.style.height = rect.height + 'px';
   
-  // Animate to left side
   setTimeout(() => {
     flyingCard.classList.add('active');
     const leftX = innerWidth * 0.25 - 140;
@@ -817,19 +868,27 @@ function handleCardClick(card, el) {
     flyingCard.style.width = '280px';
     flyingCard.style.height = '456px';
     
-    // Flip after moving
     setTimeout(() => {
       flyingCard.classList.add('flipping');
       
-      // Show writing area after flip
-      setTimeout(() => showWritingArea(card), 1000);
+      setTimeout(() => {
+        showWritingArea(card);
+      }, 500);
+      
+      setTimeout(() => {
+        document.getElementById('card-info-below').classList.add('revealed');
+        document.getElementById('write-page').classList.add('revealed');
+      }, 200);
     }, 800);
   }, 100);
 }
 
 // Show writing area
 function showWritingArea(card) {
-  // Set card display
+  const meaningText = isReversed
+    ? `【逆位 · ${card.keyword}】${card.reverseMeaning}`
+    : `【正位 · ${card.keyword}】${card.meaning}`;
+  
   const displayCard = document.getElementById('display-card');
   const displayImg = document.getElementById('display-card-img');
   displayImg.src = `assets/cards/face/${card.id}.png`;
@@ -841,17 +900,20 @@ function showWritingArea(card) {
   
   document.getElementById('display-card-name').textContent = `${card.name} · ${card.en}`;
   document.getElementById('display-card-position').textContent = isReversed ? '逆位' : '正位';
+  document.getElementById('display-card-meaning').textContent = meaningText;
   
-  // Set write page
   document.getElementById('write-date').textContent = getToday();
   document.getElementById('write-card-name').textContent = `${card.name} (${isReversed ? '逆位' : '正位'})`;
+  document.getElementById('write-card-meaning').textContent = meaningText;
   document.getElementById('diary-text-input').value = '';
   
-  // Load history pages
   loadHistoryPages(card.id);
   
   document.getElementById('writing-area').classList.add('visible');
   document.getElementById('quill').classList.add('visible');
+  
+  document.getElementById('card-info-below').classList.add('revealed');
+  document.getElementById('write-page').classList.add('revealed');
 }
 
 // Load history pages for this card
@@ -860,13 +922,12 @@ function loadHistoryPages(cardId) {
   const history = data.cardHistory && data.cardHistory[cardId];
   const book = document.getElementById('diary-book');
   
-  // Remove old history pages
   book.querySelectorAll('.diary-page:not(.diary-write-page)').forEach(p => p.remove());
   
   if (history && history.length > 0) {
     history.forEach((entry, idx) => {
       const page = document.createElement('div');
-      page.className = 'diary-page';
+      page.className = 'diary-page revealed';
       page.dataset.index = idx;
       
       let imagesHtml = '';
@@ -876,10 +937,19 @@ function loadHistoryPages(cardId) {
           '</div>';
       }
       
+      const cardData = CARDS.find(c => c.id === cardId);
+      let meaningText = '';
+      if (cardData) {
+        meaningText = entry.reversed
+          ? `【逆位 · ${cardData.keyword}】${cardData.reverseMeaning}`
+          : `【正位 · ${cardData.keyword}】${cardData.meaning}`;
+      }
+      
       page.innerHTML = `
         <div class="diary-page-content">
           <div class="diary-date">${entry.date}</div>
           <div class="diary-card-name">${entry.cardName} (${entry.reversed ? '逆位' : '正位'})</div>
+          <div class="diary-card-meaning">${meaningText}</div>
           <div class="diary-text-display">${entry.diary || '(无内容)'}</div>
           ${imagesHtml}
           <div class="diary-nav">
@@ -1046,12 +1116,12 @@ function closeWritingArea() {
   document.getElementById('writing-area').classList.remove('visible');
   document.getElementById('quill').classList.remove('visible');
   document.getElementById('flying-card').classList.remove('active', 'flipping');
+  document.getElementById('card-info-below').classList.remove('revealed');
+  document.getElementById('write-page').classList.remove('revealed');
   
-  // Clear uploaded images
   uploadedImages = [];
   renderImages();
   
-  // Restore cards
   document.querySelectorAll('.arc-card').forEach(c => c.classList.remove('dimmed'));
   isProcessing = false;
 }
@@ -1148,15 +1218,13 @@ if(hasDrawnToday()){
     cacheText = `【正位 · ${saveCard.keyword}】${saveCard.meaning}`;
   }
 
-  // 日记页
   document.getElementById("write-card-name").innerText = saveCard.name + (saveReverse ? "（逆位）" : "（正位）");
-  const writeTextbox = document.getElementById('write-date');
-  if(writeTextbox) writeTextbox.innerText = cacheText;
+  document.getElementById("write-card-meaning").innerText = cacheText;
+  document.getElementById('write-date').innerText = getToday();
 
-  // 左侧卡牌弹窗
-  document.getElementById("display-card-name").innerText = saveCard.name + (saveReverse ? "（逆位）" : "（正位）");
-  const popTextbox = document.getElementById('display-card-position');
-  if(popTextbox) popTextbox.innerText = cacheText;
+  document.getElementById("display-card-name").innerText = `${saveCard.name} · ${saveCard.en}`;
+  document.getElementById("display-card-position").innerText = saveReverse ? '逆位' : '正位';
+  document.getElementById("display-card-meaning").innerText = cacheText;
 }
 
 const flyCard = document.getElementById("flying-card");
