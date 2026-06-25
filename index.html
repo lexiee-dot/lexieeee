@@ -64,31 +64,26 @@ body::before {
   justify-content: center;
 }
 
-/* Verification */
-#verify-box {
+/* Start box */
+#start-box {
   position: fixed;
-  inset: 0;              /* 关键：占满整个屏幕 */
-
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
-  gap: 20px;
-
+  gap: 15px;
   opacity: 0;
   animation: btnFadeIn 1.5s ease-out 2s forwards;
-
-  z-index: 9999;         /* 防止被卡牌盖住 */
+  z-index: 9999;
 }
-
-#verify-box.hidden { display: none; }
+#start-box.hidden { display: none; }
 @keyframes btnFadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
 #verify-label {
   font-size: 0.85rem;
   color: var(--gold-dim);
   letter-spacing: 0.2em;
-  order: 2;
+  margin-bottom: 5px;
 }
 #verify-input {
   width: 200px;
@@ -100,7 +95,7 @@ body::before {
   font-size: 0.9rem;
   text-align: center;
   outline: none;
-  order: 3;
+  letter-spacing: 0.2em;
 }
 #verify-input:focus {
   border-color: var(--gold);
@@ -109,19 +104,20 @@ body::before {
 #verify-input::placeholder {
   color: var(--gold-dim);
   opacity: 0.5;
+  letter-spacing: 0.1em;
 }
 #verify-error {
   font-size: 0.75rem;
   color: #aa6a6a;
   opacity: 0;
   transition: opacity 0.3s;
-  order: 4;
+  height: 1rem;
 }
 #verify-error.show { opacity: 1; }
 
 /* Start button */
 #start-btn {
-  padding: 18px 40px;
+  padding: 16px 40px;
   background: rgba(20,18,15,0.9);
   border: 2px solid var(--gold-dim);
   color: var(--gold);
@@ -130,13 +126,7 @@ body::before {
   letter-spacing: 0.3em;
   cursor: pointer;
   transition: all 0.3s;
-
-  /* 页面居中 */
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10; /* 提高层级，防止被其他元素盖住 */
+  margin-top: 10px;
 }
 
 #start-btn:hover {
@@ -145,20 +135,7 @@ body::before {
   box-shadow: 0 0 30px rgba(168,152,120,0.3);
 }
 
-/* 关键修复：伪元素禁止拦截点击 */
-#start-btn::before, #start-btn::after {
-  content: '♡';
-  position: absolute;
-  top: 50%; 
-  transform: translateY(-50%);
-  color: var(--gold-dim);
-  font-size: 0.8rem;
-  pointer-events: none; /* 让鼠标穿透伪元素，点到按钮本体 */
-}
-#start-btn::before { left: 12px; }
-#start-btn::after { right: 12px; }
-
-#start-btn.hidden { display: none; }
+#start-box.hidden { display: none; }
 
 
 /* Card spread */
@@ -631,12 +608,12 @@ body::before {
 <canvas id="particles"></canvas>
 
 <div id="scene">
-  <div id="verify-box">
+  <div id="start-box">
     <div id="verify-label">请验证身份</div>
     <input type="text" id="verify-input" placeholder="输入密码..." lang="zh-CN">
     <div id="verify-error">密码错误</div>
+    <button id="start-btn">♡ 请选择今日启示 ♡</button>
   </div>
-  <button id="start-btn"class="hidden">请选择今日启示</button>
   <div id="card-spread">
     <div id="arc-container"></div>
   </div>
@@ -1325,36 +1302,24 @@ function init() {
   
   // Verification
   const verifyInput = document.getElementById('verify-input');
-  const verifyBox = document.getElementById('verify-box');
+  const startBox = document.getElementById('start-box');
   const startBtn = document.getElementById('start-btn');
   const verifyError = document.getElementById('verify-error');
-  
+
   function checkPassword() {
-    if (verifyInput.value.trim() === '海豚') {
-      verifyBox.classList.add('hidden');
-      startBtn.classList.remove('hidden');
-    } else if (verifyInput.value.trim() !== '') {
+    if (verifyInput.value.trim() === '0704') {
+      verifyError.classList.remove('show');
+      startBox.classList.add('hidden');
+      document.getElementById('card-spread').classList.add('visible');
+      createArc();
+    } else {
       verifyError.classList.add('show');
       verifyInput.value = '';
       setTimeout(() => verifyError.classList.remove('show'), 2000);
     }
   }
-  
-  // Use change event for better Chinese input support
-  verifyInput.addEventListener('change', checkPassword);
-  verifyInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      checkPassword();
-    }
-  });
-  
-  // Start button
-  startBtn.addEventListener('click', () => {
-    startBtn.classList.add('hidden');
-    document.getElementById('card-spread').classList.add('visible');
-    createArc();
-  });
+
+  startBtn.addEventListener('click', checkPassword);
   
   // Save and close buttons
   document.getElementById('save-btn').addEventListener('click', saveDiary);
