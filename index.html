@@ -1244,18 +1244,43 @@ function closeWritingArea() {
 function collectCards() {
   document.getElementById('end-overlay').classList.remove('visible');
 
-  // 收牌动画 - 卡牌收回
+  const con = document.getElementById('arc-container');
+  const cW = con.offsetWidth;
+  const cH = con.offsetHeight;
+  const cw = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-w'));
+  const ch = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-h'));
+
   const cards = document.querySelectorAll('.arc-card');
+  const total = cards.length;
+  const middleIdx = Math.floor(total / 2);
+
+  const centerX = cW / 2 - cw / 2;
+  const centerY = cH / 2 - ch / 2;
+
   cards.forEach((card, index) => {
-    card.style.transition = 'all 1s cubic-bezier(0.4, 0, 0.2, 1)';
-    card.style.transform = 'translateY(100vh) rotate(20deg)';
-    card.style.opacity = '0';
+    const distance = Math.abs(index - middleIdx);
+    const delay = distance * 30;
+
+    setTimeout(() => {
+      card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+      card.style.transform = `translate(${centerX}px, ${centerY}px) rotate(0deg)`;
+      card.style.zIndex = total - Math.abs(index - middleIdx);
+    }, delay);
   });
 
-  // 屏幕逐渐变暗并显示结束语
+  const maxDelay = middleIdx * 30 + 600;
+
+  setTimeout(() => {
+    cards.forEach((card, index) => {
+      card.style.transition = 'all 0.5s ease-in';
+      card.style.transform = `translate(${centerX}px, ${centerY + 150}px) rotate(0deg) scale(0.7)`;
+      card.style.opacity = '0';
+    });
+  }, maxDelay);
+
   setTimeout(() => {
     document.getElementById('final-overlay').classList.add('visible');
-  }, 1200);
+  }, maxDelay + 500);
 }
 
 // 再抽一张功能
