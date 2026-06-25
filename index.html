@@ -120,6 +120,7 @@ body::before {
   padding: 10px 30px;
   background: rgba(20,18,15,0.9);
   border: 2px solid var(--gold-dim);
+  border-radius: 25px;
   color: var(--gold);
   font-family: var(--font-cn);
   font-size: 0.9rem;
@@ -127,12 +128,13 @@ body::before {
   cursor: pointer;
   transition: all 0.3s;
   margin-top: 5px;
+  box-shadow: 0 0 15px rgba(168,152,120,0.2);
 }
 
 #start-btn:hover {
   background: rgba(30,28,25,0.95);
   border-color: var(--gold);
-  box-shadow: 0 0 30px rgba(168,152,120,0.3);
+  box-shadow: 0 0 30px rgba(168,152,120,0.4);
 }
 
 #start-box.hidden { display: none; }
@@ -563,7 +565,7 @@ body::before {
 }
 #final-message {
   font-family: var(--font-cn);
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   color: var(--gold-light);
   letter-spacing: 0.2em;
   opacity: 0;
