@@ -1018,7 +1018,6 @@ function updateQuillPosition() {
   mirror.style.padding = computed.padding;
   mirror.style.border = computed.border;
 
-  // 核心修复：镜像对齐输入框位置
   const textareaRect = textarea.getBoundingClientRect();
   mirror.style.left = textareaRect.left + window.scrollX + 'px';
   mirror.style.top = textareaRect.top + window.scrollY + 'px';
@@ -1031,24 +1030,41 @@ function updateQuillPosition() {
   mirror.appendChild(marker);
   document.body.appendChild(mirror);
 
-  // 计算光标真实位置
   const markerRect = marker.getBoundingClientRect();
   const quillX = markerRect.left + 8;
   const quillY = markerRect.top - 16;
 
   quill.style.left = quillX + 'px';
   quill.style.top = quillY + 'px';
-  quill.classList.add('visible');
 
   document.body.removeChild(mirror);
 }
 
 // 关键：绑定所有触发事件（必须加在函数外面）
 const textareaDom = document.getElementById('diary-text-input');
-textareaDom.addEventListener('click', updateQuillPosition);
-textareaDom.addEventListener('keyup', updateQuillPosition);
-textareaDom.addEventListener('input', updateQuillPosition);
-textareaDom.addEventListener('select', updateQuillPosition);
+textareaDom.addEventListener('click', () => {
+  const quill = document.getElementById('quill');
+  quill.classList.add('visible');
+  updateQuillPosition();
+});
+textareaDom.addEventListener('keyup', () => {
+  const quill = document.getElementById('quill');
+  if (quill.classList.contains('visible')) {
+    updateQuillPosition();
+  }
+});
+textareaDom.addEventListener('input', () => {
+  const quill = document.getElementById('quill');
+  if (quill.classList.contains('visible')) {
+    updateQuillPosition();
+  }
+});
+textareaDom.addEventListener('select', () => {
+  const quill = document.getElementById('quill');
+  if (quill.classList.contains('visible')) {
+    updateQuillPosition();
+  }
+});
 textareaDom.addEventListener('focus', () => {
   const quill = document.getElementById('quill');
   quill.classList.add('visible');
