@@ -72,18 +72,18 @@ body::before {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 15px;
+  gap: 12px;
   opacity: 0;
   animation: btnFadeIn 1.5s ease-out 2s forwards;
   z-index: 9999;
+  transform: translateY(-30px);
 }
 #start-box.hidden { display: none; }
-@keyframes btnFadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes btnFadeIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(-30px); } }
 #verify-label {
   font-size: 0.85rem;
   color: var(--gold-dim);
   letter-spacing: 0.2em;
-  margin-bottom: 5px;
 }
 #verify-input {
   width: 280px;
@@ -115,29 +115,20 @@ body::before {
 }
 #verify-error.show { opacity: 1; }
 
-/* Start button */
+/* Start button (text only) */
 #start-btn {
-  padding: 10px 30px;
-  background: rgba(20,18,15,0.9);
-  border: 2px solid var(--gold-dim);
-  border-radius: 25px;
+  font-size: 0.85rem;
   color: var(--gold);
-  font-family: var(--font-cn);
-  font-size: 0.9rem;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.3em;
   cursor: pointer;
   transition: all 0.3s;
-  margin-top: 5px;
-  box-shadow: 0 0 15px rgba(168,152,120,0.2);
+  padding: 8px 0;
 }
 
 #start-btn:hover {
-  background: rgba(30,28,25,0.95);
-  border-color: var(--gold);
-  box-shadow: 0 0 30px rgba(168,152,120,0.4);
+  color: var(--gold-light);
+  text-shadow: 0 0 10px rgba(168,152,120,0.5);
 }
-
-#start-box.hidden { display: none; }
 
 
 /* Card spread */
@@ -614,7 +605,7 @@ body::before {
     <div id="verify-label">请验证身份</div>
     <input type="text" id="verify-input" placeholder="输入密码..." lang="zh-CN">
     <div id="verify-error">密码错误</div>
-    <button id="start-btn">确认</button>
+    <span id="start-btn">确认</span>
   </div>
   <div id="card-spread">
     <div id="arc-container"></div>
