@@ -509,6 +509,95 @@ body::before {
 }
 
 /* Quill */
+/* 结束提示框 */
+#end-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+#end-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+#end-dialog {
+  background: rgba(20, 18, 15, 0.95);
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  padding: 30px 40px;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+#end-overlay.visible #end-dialog {
+  transform: scale(1);
+}
+#end-title {
+  font-family: var(--font-cn);
+  font-size: 1.1rem;
+  color: var(--gold);
+  margin-bottom: 25px;
+  letter-spacing: 0.1em;
+}
+#end-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.end-btn {
+  padding: 12px 30px;
+  background: rgba(168, 152, 120, 0.1);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-light);
+  font-family: var(--font-cn);
+  font-size: 0.95rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+.end-btn:hover {
+  background: rgba(168, 152, 120, 0.2);
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+/* 最终遮罩 */
+#final-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 800;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 2s ease;
+}
+#final-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+#final-message {
+  font-family: var(--font-cn);
+  font-size: 1.5rem;
+  color: var(--gold-light);
+  letter-spacing: 0.2em;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 1.5s ease 1.5s, transform 1.5s ease 1.5s;
+}
+#final-overlay.visible #final-message {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 #quill {
   position: fixed;
   width: 60px;
@@ -516,11 +605,9 @@ body::before {
   z-index: 601;
   pointer-events: none;
   opacity: 0;
-  /* 初始移出视口，解决刷新左下角 */
   left: -9999px;
   top: -9999px;
   transition: opacity 0.5s, left 0.05s, top 0.05s;
-  /* 只保留旋转，彻底删掉 translateX(-50px) translateY(-10px) */
   transform: rotate(-30deg);
 }
 #quill.visible {
@@ -595,6 +682,22 @@ body::before {
       </div>
     </div>
   </div>
+</div>
+
+<!-- 结束提示框 -->
+<div id="end-overlay">
+  <div id="end-dialog">
+    <div id="end-title">今日启示已记录</div>
+    <div id="end-buttons">
+      <button id="end-collect-btn" class="end-btn">收牌</button>
+      <button id="end-reroll-btn" class="end-btn">不信，再抽一张</button>
+    </div>
+  </div>
+</div>
+
+<!-- 结束动画遮罩 -->
+<div id="final-overlay">
+  <div id="final-message">不是生日也希望你开心^^</div>
 </div>
 
 <img id="quill" src="assets/quill.png" alt="">
@@ -1079,12 +1182,12 @@ textareaDom.addEventListener('blur', () => {
 function saveDiary() {
   const data = getStorage();
   if (!data.cardHistory) data.cardHistory = {};
-  
+
   const cardId = currentCard.id;
   if (!data.cardHistory[cardId]) {
     data.cardHistory[cardId] = [];
   }
-  
+
   const diaryText = document.getElementById('diary-text-input').value;
   data.cardHistory[cardId].push({
     date: getToday(),
@@ -1093,24 +1196,28 @@ function saveDiary() {
     diary: diaryText,
     images: [...uploadedImages]
   });
-  
+
   // Save today's draw
   data.today = getToday();
   data.todayCard = cardId;
-  
+
   setStorage(data);
-  
+
   // Show feedback
   const btn = document.getElementById('save-btn');
   btn.textContent = '已保存';
-  setTimeout(() => { btn.textContent = '保存'; }, 1500);
-  
+
   // Clear uploaded images
   uploadedImages = [];
   renderImages();
-  
+
   // Reload history
   loadHistoryPages(cardId);
+
+  // 显示结束提示框
+  setTimeout(() => {
+    document.getElementById('end-overlay').classList.add('visible');
+  }, 500);
 }
 
 // Close writing area
@@ -1120,12 +1227,71 @@ function closeWritingArea() {
   document.getElementById('flying-card').classList.remove('active', 'flipping');
   document.getElementById('card-info-below').classList.remove('revealed');
   document.getElementById('write-page').classList.remove('revealed');
-  
+
   uploadedImages = [];
   renderImages();
-  
+
   document.querySelectorAll('.arc-card').forEach(c => c.classList.remove('dimmed'));
   isProcessing = false;
+
+  // 显示结束提示框
+  setTimeout(() => {
+    document.getElementById('end-overlay').classList.add('visible');
+  }, 300);
+}
+
+// 收牌功能
+function collectCards() {
+  document.getElementById('end-overlay').classList.remove('visible');
+
+  // 收牌动画 - 卡牌收回
+  const cards = document.querySelectorAll('.arc-card');
+  cards.forEach((card, index) => {
+    card.style.transition = 'all 1s cubic-bezier(0.4, 0, 0.2, 1)';
+    card.style.transform = 'translateY(100vh) rotate(20deg)';
+    card.style.opacity = '0';
+  });
+
+  // 屏幕逐渐变暗并显示结束语
+  setTimeout(() => {
+    document.getElementById('final-overlay').classList.add('visible');
+  }, 1200);
+}
+
+// 再抽一张功能
+function rerollCard() {
+  document.getElementById('end-overlay').classList.remove('visible');
+  document.getElementById('writing-area').classList.remove('visible');
+  document.getElementById('quill').classList.remove('visible');
+  document.getElementById('flying-card').classList.remove('active', 'flipping');
+  document.getElementById('card-info-below').classList.remove('revealed');
+  document.getElementById('write-page').classList.remove('revealed');
+
+  uploadedImages = [];
+  renderImages();
+
+  // 恢复卡牌为可点击状态
+  document.querySelectorAll('.arc-card').forEach(c => {
+    c.classList.remove('dimmed');
+    c.classList.remove('dealt');
+  });
+  isProcessing = false;
+
+  // 重新发牌动画
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.arc-card');
+    cards.forEach((card, index) => {
+      card.style.transition = 'none';
+      card.style.transform = 'translateY(-50vh) scale(0.5)';
+      card.style.opacity = '0';
+
+      setTimeout(() => {
+        card.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        card.style.transform = card.style.getPropertyValue('--base-transform');
+        card.style.opacity = '1';
+      }, 100 + index * 40);
+    });
+  }, 300);
 }
 
 // Init
@@ -1168,7 +1334,11 @@ function init() {
   // Save and close buttons
   document.getElementById('save-btn').addEventListener('click', saveDiary);
   document.getElementById('close-btn').addEventListener('click', closeWritingArea);
-  
+
+  // 结束提示框按钮
+  document.getElementById('end-collect-btn').addEventListener('click', collectCards);
+  document.getElementById('end-reroll-btn').addEventListener('click', rerollCard);
+
   // Image upload
   document.getElementById('diary-img-input').addEventListener('change', handleImageUpload);
 }
